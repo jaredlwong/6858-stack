@@ -1,0 +1,28 @@
+https://sourceforge.net/p/zbar/patches/38/
+
+Signed integer overflow is undefined behavior in C. It is not defined to
+wrap-around. Thus, when checking overflow conditions of signed integers one
+should not check something like (a+b)<a?true:false. It will always be false.
+
+Here is a patch for zbar/qrcode/qrdec.c:
+
+--- a/zbar/qrcode/qrdec.c
++++ b/zbar/qrcode/qrdec.c
+@@ -2108,7 +2108,7 @@
+       else nrempty++;
+       ru+=dru;
+       /*Our final defense: if we overflow, stop.*/
+-      if(rv+drv>rv)rv+=drv;
++      if(rv<INT_MAX-drv)rv+=drv;
+       else nrempty=INT_MAX;
+       rx+=drxi;
+       ry+=dryi;
+@@ -2151,7 +2151,7 @@
+       }
+       else nbempty++;
+       /*Our final defense: if we overflow, stop.*/
+-      if(bu+dbu>bu)bu+=dbu;
++      if(bu>INT_MAX-dbu)bu+=dbu;
+       else nbempty=INT_MAX;
+       bv+=dbv;
+       bx+=dbxi;
