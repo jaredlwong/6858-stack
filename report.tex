@@ -1,7 +1,7 @@
 \documentclass[9pt,twocolumn]{article}
 
 % Set margins
-\usepackage[margin=0.5in]{geometry}
+\usepackage[margin=0.75in]{geometry}
 \setlength{\columnsep}{.5in}
 % Set fonts, both for main and for source code
 \usepackage{fontspec}
@@ -10,6 +10,7 @@
 
 % For bibtex urls
 \usepackage{url}
+\setlength{\abovecaptionskip}{1pt plus 0pt minus 1pt}
 
 % formatting for source code
 \usepackage{listings}
@@ -40,7 +41,7 @@
                                    % columns=flexible)
   keywordstyle=\color{blue},       % keyword style
   language=C,                      % the language of the code
-  morekeywords={*,...},            % if you want to add more keywords to the
+  morekeywords={*,time_t,...},            % if you want to add more keywords to the
                                    % set
   numbers=none,                    % where to put the line-numbers; possible
                                    % values are (none, left, right)
@@ -140,14 +141,27 @@ of miscellaneous bugs related to division by zero, buffer overflow by one, and s
 
 
 \subsection{Null Pointer Dereference}
-Null pointer dereference, caused by checks to ensure that pointer is not null,
-but pointer is never not null at location. True result optimized out.
+The most common type of warning given by STACK was that of the null pointer dereference. As the C standard states, dereferencing a null pointer is undefined, so modern compilers use this standard to predict all previously dereferenced pointers are already non-null. Often times, programmers write redundant checks to verify something is not-null. For example, a common practice we found was the tendency for developers to check whether a pointer is null before freeing it. Of course, since the pointer had already been dereferenced previously, the check was immediately optimized out. Of course, the free function accepts NULL pointers as well and therefore we see that this check for non-null acts as almost like a defensive programming behavior, so STACK's warnings do not affect correctness or jeopardize security in any way. 
+
+A entirely separate class of errors that STACK was able to pick up on by chance were also categorized as null pointer dereferences. Upon futher review, these errors can be best categorized as programmer error. In each case, the developer had a pointer which was pointing some value of interest. Due to carelessness, instead of dereferencng the pointer to find its value, the code showed accidentally checked whether the pointer itself as non-zero. Because the pointer had already been dereferenced, STACK threw a warning. This fortuitous static checking ability turned out to be quite useful, helping to find two bugs in SVN and one in Audicity. The fixes for all of them were trivial and only needed a single dereference on the pointer of interest, but it is fascinating to see the power of STACK to pick up on other sorts of programmer errors other than those it was intended for. In figure~\ref{fig:svn} below, we outline the programmer error that STACK helped fix that went undetected for years.
+
+\begin{figure}
+\begin{lstlisting}
+char *last_dot = strrchr(path, '.');
+// check if the strings ends in a period
+if (last_dot && (last_dot + 1 != '\0')) {...}
+\end{lstlisting}
+\label{fig:svn}
+\caption{lalalalal}
+\end{figure}
+
+
 
 \subsection{Signed Integer Operation Overflow}
 According to the C standard, the overflow of signed integers results in undefined behavior. This standard allows the compiler to make various sorts of optimizations that it wouldn't normally have been able to make because it assumes signed integer arithmetic cannot overflow. We found that many developers incorrectly go out of their way to try to catch these overflows. Instead of using constants like \texttt{INT\_MAX}, they assume that an overflow will wrap around to its negative value and check to see if the sume is less than one of the operands. Unfortunately, if they were to check this with DEBUG on and no optimizations, it would probably work, leading to a greater misunderstanding among developers about how to correctly check if an signed operation will overflow.
 
 \subsubsection{Exploiting libcurl}
-In the following example, we see an instance of incorrect signed integer overflow and its subsequent security implications for cURL's \texttt{curl\_parsedate}. In figure~\ref{fig:libcurl1} we see a function that is public to the API for computing the time stamp associated with a given string representation of the date. First, the code parses the date string up to everything but the time zone difference and stores the result into a \texttt{t} of type \texttt{time\_t}. Next, it validates that the time zone is one of many available timezones specified in the header file, or if not that it is within 14 hours ahead or behind of GMT. The developer then is aware of the fact that adding the offset to the original time might overflow the time, Unfortunately, seemingly unaware of the distinction between signed-type overflows and how they are not guaranteed to wrap around in the same way as their unsigned integer counting parts, the developer implements these overflow checks incorretly. The compiler, on sufficiently high optimization levels, takes advantage of the fact that signed types cannot overflow and then assumes that the addition will not converge.With this optimization, checks like $y + 250 < y$ gets simplified to false, thereby bypassing the extra security checks that the developer put in for the whole sake of limiting bugs.
+In the following example, we see an instance of incorrect signed integer overflow and its subsequent security implications for cURL's \texttt{curl\_parsedate}. In figure~\ref{fig:libcurl1} we see a function that is public to the API for computing the time stamp associated with a given string representation of the date. First, the code parses the date string up to everything but the time zone difference and stores the result into a \texttt{t} of type \texttt{time\_t}. Next, it validates that the time zone is one of many available timezones specified in the header file, or if not that it is within 14 hours ahead or behind of GMT. The developer then is aware of the fact that adding the offset to the original time might overflow the time, Unfortunately, seemingly unaware of the distinction between signed-type overflows and how they are not guaranteed to wrap around in the same way as their unsigned integer counting parts, the developer implements these overflow checks incorretly. The compiler, on sufficiently high optimization levels, takes advantage of the fact that signed types cannot overflow and then assumes that the addition will not converge.With this optimization, checks like $y + 250 < y$ get simplified to false, thereby bypassing the extra security checks that the developer put in for the whole sake of limiting bugs.
 
 \begin{figure}[h]
 \begin{lstlisting}
@@ -155,13 +169,13 @@ time_t t = ...;
 /* Add the time zone diff between local time zone and GMT. */
 long delta = (long)(tzoff!=-1?tzoff:0);
  
-if((delta>0) && (t + delta < t))
+if((delta > 0) && (t + delta < t))
     return -1; /* time_t overflow */
  
 t += delta;
 \end{lstlisting}
 \label{fig:libcurl1}
-\caption{The above shows an unstable signed integer check for overflow. The developer has gone out of this way to right this check, but is mistaken as to the accepted behavior of signed integers on overflow, which is undefined. The compiler then simplifies $ t  + $ delta $ < t$ to delta $ < 0$ and thus the compound expression evaluates to false. There is a potential overflow in incrementing \texttt{t} by \texttt{delta}, which is never checked because the compiler has optimized out the unstable code, and this overflow propagates outwards to any library calling this function without any chance of recovery.}
+\caption{The above shows an unstable signed integer check for overflow. Interestingly, Tte developer has gone out of his way to write this check as evidenced  by the comment. Unfortunately this check is invalid and simply a common misconception, and the compiler then simplifies $ t  + $ delta $ < t$ to delta $ < 0$ and thus the compound expression evaluates to false. There is a potential overflow in incrementing \texttt{t} by \texttt{delta}, which is never checked because the compiler has optimized out the unstable code, and this overflow propagates outwards to any library calling this function without any chance of recovery.}
 \end{figure}
 
 
@@ -169,11 +183,11 @@ In response, we wrote a simple exploit that seeks to take advantage of the bug b
 
 \begin{figure}[h]
 \begin{lstlisting}
-char   *exploit = "19 Jan 2038  03:14:07 -0200";
+char *exploit = "19 Jan 2038 03:14:07 -0200";
 time_t time = curl_getdate(exploit, NULL);
 \end{lstlisting}
 \label{fig:curl-xploit}
-\caption{The above shows a working exploit for the \texttt{curl\_parsedate} bug. Taking advantage of the undefined behavior of signed integer overflow, the overflow goes undetected due to the unstable code check. }
+\caption{The above shows a working exploit for the \texttt{curl\_parsedate} bug. Taking advantage of the undefined behavior of signed integer overflow, the overflow goes undetected due to the unstable overflow check. }
 \end{figure}
 
 To patch this bug, we check instead for overfow by checking for \texttt{t < INT\_MAX - delta}, which fixes the bug and successfully anticipates the overflow before it happens, because once it happens it is too late.
