@@ -85,6 +85,19 @@ behavior: redundant checks,
 \section{Threat Model}
 We assume that an attacker has complete knowledge of the source code.
 
+\section{Classification of Undefined Behavior Bugs}
+Generally, the bugs we found due to undefined behavior fell into several
+general categories.
+
+Null pointer dereference, caused by checks to ensure that pointer is not null,
+but pointer is never not null at location. True result optimized out.
+
+\section{Exploits}
+Some random exploits
+
+\section{Patches}
+Some of our patches
+
 \begin{lstlisting}
 n = e - i + 1;  /* number of elements */
 if (n <= 0 || !lua_checkstack(L, n))
