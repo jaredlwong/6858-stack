@@ -1,4 +1,4 @@
-\documentclass[9pt,twocolumn]{article}
+\documentclass[10pt,twocolumn]{article}
 
 % Set margins
 \usepackage[margin=0.75in]{geometry}
@@ -10,8 +10,12 @@
 
 % For bibtex urls
 \usepackage{url}
-\setlength{\abovecaptionskip}{1pt plus 0pt minus 1pt}
 
+% For figure bolding
+\usepackage[labelfont=bf]{caption}
+
+% For caption spacing
+\setlength{\abovecaptionskip}{1pt plus 0pt minus 1pt}
 \setlength{\abovecaptionskip}{0cm}
 
 % formatting for source code
@@ -98,17 +102,17 @@ Given the sheer number of software systems that contain such errors,
 with about 50\% of Debian packages reporting over 80,000 different warnings,
 we attempted to begin the process of filtering through these results. 
 
-With the help of STACK\cite{stack}, we analyzed \NumPackages packages, 
-from Debian and other locations, and submitted a total of \NumPatches patches, 
-of which \NumPatchesAccepted have been accepted thus far, with the rest pending approval.
-This paper presents a case study into the common mis-practices of many developers and
-has helped us develop a rule-of-humb heuristic as to which types of bugs are more
-or less likely to be vulnerabilities.
+With the help of Stack\cite{stack}, we analyzed \NumPackages packages, from
+Debian and other locations, and submitted a total of \NumPatches patches, of
+which \NumPatchesAccepted have been accepted thus far, with the rest pending
+approval. This paper presents a case study into the common mis-practices of
+many developers and has helped us develop a rule-of-thumb heuristic as to which
+types of bugs are more or less likely to be vulnerabilities.
 
 In section~\ref{sec:security} we review our working threat model and the
 security implications of undefined behavior, in
 section~\ref{sec:classification} we break down the observed bugs into a number
-of different categories that loosely correspond to the the types of bugs STACK
+of different categories that loosely correspond to the types of bugs Stack
 can detect, and in section~\ref{sec:conclusion} we wrap up and discuss future
 areas of research. Finally, section~\ref{sec:appendix} provides an appendix of
 all patches found and submitted thus far.
@@ -118,110 +122,176 @@ all patches found and submitted thus far.
 \subsection{Threat Model}
 When accessing the security implications of undefined behavior we assume that
 an attacker has complete knowledge of the source code. Any optimization unsafe
-bugs that exist are known to the attacker, and are able to exploited if
+bugs that exist are known to the attacker, and are able to be exploited if
 possible.
 
 \subsection{Threats}
-Undefined behavior can lead to a great number of common security
-vulnerabilities. In our case study of undefined behavior we observe pointer
-overflows, buffer overflows, integer overflows, uninitialized data, null
-pointer dereferences, and infinite loops. In a recent case study from 2010 to
-mid 2011 \cite{chen-kbugs} of the Linux kernel, these types of errors have been
-shown to account for up to 70\% of the CVE reports.
+Undefined behavior can lead to a number of common security vulnerabilities. In
+our case study of undefined behavior we observe pointer overflows, buffer
+overflows, integer overflows, uninitialized data, null pointer dereferences,
+and infinite loops. In a recent case study from 2010 to mid 2011
+\cite{chen-kbugs} of the Linux kernel, these types of errors have been shown to
+account for up to 70\% of the CVE reports.
 
 As compilers increasingly take advantage of undefined behavior \cite{stack} and
 attackers continue to exploit behavior caused by undefined behavior it is
-important for programmers to not use, intentionally or unintentionlly,
+important for programmers to not use, intentionally or unintentionally,
 undefined behavior.
 
 \section{Classification of Unstable Code}
 \label{sec:classification}
-Generally, the bugs we found due to unstable code fell into several
-main categories. First, null pointer dereferences were the  most common type of 
-bug signaled by STACK but did not alter correctness. Mixed in with these null pointer dereferences
-were actual programmer errors due to accidentally not dereferencing pointers for which
-they wanted their value. Second, signed integer operation overflow checks were another common source
-of developer misconception. Thirdly, there were pointer overflow bugs. And finally, there were a class
-of miscellaneous bugs related to division by zero, buffer overflow by one, and shift left and right overflow.
+Generally, the bugs we found due to unstable code fell into several main
+categories. First, null pointer dereferences were the  most common type of bug
+signaled by Stack but did not alter correctness. Mixed in with these null
+pointer dereferences were actual programmer errors due to accidentally not
+dereferencing pointers for which they wanted their value. Second, signed
+integer operation overflow checks were another common source of developer
+misconception. Thirdly, there were pointer overflow bugs. And finally, there
+were a class of miscellaneous bugs related to division by zero, buffer overflow
+by one, and shift left and right overflow.
 
 
 \subsection{Null Pointer Dereference}
-The most common type of warning given by STACK was that of the null pointer dereference. As the C standard states, dereferencing a null pointer is undefined, so modern compilers use this standard to predict all previously dereferenced pointers are already non-null. Often times, programmers write redundant checks to verify something is not-null. For example, a common practice we found was the tendency for developers to check whether a pointer is null before freeing it. Of course, since the pointer had already been dereferenced previously, the check was immediately optimized out. Of course, the free function accepts NULL pointers as well and therefore we see that this check for non-null acts as almost like a defensive programming behavior, so STACK's warnings do not affect correctness or jeopardize security in any way. 
+The most common type of warning given by Stack was that of the null pointer
+dereference. As the C standard states \cite{c11}, dereferencing a null pointer is
+undefined, so modern compilers use this standard to predict all previously
+dereferenced pointers are already non-null. Often times, programmers write
+redundant checks to verify something is non-null. For example, a common
+practice we found was the tendency for developers to check whether a pointer is
+null before freeing it. Of course, since the pointer had already been
+dereferenced previously, the check was immediately optimized out. Of course,
+the free function accepts NULL pointers as well and therefore we see that this
+check for non-null acts as almost like a defensive programming behavior, so
+Stack's warnings do not affect correctness or jeopardize security in any way. 
 
-A entirely separate class of errors that STACK was able to pick up on by chance were also categorized as null pointer dereferences. Upon futher review, these errors can be best categorized as programmer error. In each case, the developer had a pointer which was pointing some value of interest. Due to carelessness, instead of dereferencng the pointer to find its value, the code showed accidentally checked whether the pointer itself as non-zero. Because the pointer had already been dereferenced, STACK threw a warning. This fortuitous static checking ability turned out to be quite useful, helping to find two bugs in SVN and one in Audicity. The fixes for all of them were trivial and only needed a single dereference on the pointer of interest, but it is fascinating to see the power of STACK to pick up on other sorts of programmer errors other than those it was intended for. In figure~\ref{fig:svn} below, we outline the programmer error that STACK helped fix that went undetected for years.
+An entirely separate class of errors that Stack was able to pick up on by
+chance were also categorized as null pointer dereferences. Upon further review,
+these errors can be best categorized as programmer error. In each case, the
+developer had a pointer which was pointing some value of interest. Due to
+carelessness, instead of dereferencing the pointer to find its value, the code
+showed accidentally checked whether the pointer itself was non-zero. Because
+the pointer had already been dereferenced, Stack threw a warning. This
+fortuitous static checking ability turned out to be quite useful, helping to
+find two bugs in SVN and one in Audacity. The fixes for all of them were
+trivial and only needed a single dereference on the pointer of interest, but it
+is fascinating to see the power of Stack to pick up on other sorts of
+programmer errors other than those it was intended for. In Figure~\ref{fig:svn}
+below, we outline the programmer error that Stack helped fix that went
+undetected for years.
 
 \begin{figure}
 \begin{lstlisting}
 char *last_dot = strrchr(path, '.');
-// check if the strings ends in a period
+/* check if the strings ends in a period */
 if (last_dot && (last_dot + 1 != '\0')) {...}
 \end{lstlisting}
-\label{fig:svn}
-\caption{lalalalal}
+\caption{\label{fig:svn} lalalalal}
 \end{figure}
-
-
 
 \subsection{Signed Integer Operation Overflow}
-According to the C standard, the overflow of signed integers results in undefined behavior. This standard allows the compiler to make various sorts of optimizations that it wouldn't normally have been able to make because it assumes signed integer arithmetic cannot overflow. We found that many developers incorrectly go out of their way to try to catch these overflows. Instead of using constants like \texttt{INT\_MAX}, they assume that an overflow will wrap around to its negative value and check to see if the sume is less than one of the operands. Unfortunately, if they were to check this with DEBUG on and no optimizations, it would probably work, leading to a greater misunderstanding among developers about how to correctly check if an signed operation will overflow.
+According to the C standard \cite{c11}, the overflow of signed integers results
+in undefined behavior. This standard allows the compiler to make various sorts
+of optimizations that it wouldn't normally have been able to make because it
+assumes signed integer arithmetic cannot overflow. We found that many
+developers incorrectly go out of their way to try to catch these overflows.
+Instead of using constants like \texttt{INT\_MAX}, they assume that an overflow
+will wrap around to its negative value and check to see if the sum is less than
+one of the operands. Unfortunately, if they were to check this with DEBUG on
+and no optimizations, it would probably work, leading to a greater
+misunderstanding among developers about how to correctly check if a signed
+operation will overflow.
 
 \subsubsection{Exploiting libcurl}
-In the following example, we see an instance of incorrect signed integer overflow and its subsequent security implications for cURL's \texttt{curl\_parsedate}. In figure~\ref{fig:libcurl1} we see a function that is public to the API for computing the time stamp associated with a given string representation of the date. First, the code parses the date string up to everything but the time zone difference and stores the result into a \texttt{t} of type \texttt{time\_t}. Next, it validates that the time zone is one of many available timezones specified in the header file, or if not that it is within 14 hours ahead or behind of GMT. The developer then is aware of the fact that adding the offset to the original time might overflow the time, Unfortunately, seemingly unaware of the distinction between signed-type overflows and how they are not guaranteed to wrap around in the same way as their unsigned integer counting parts, the developer implements these overflow checks incorretly. The compiler, on sufficiently high optimization levels, takes advantage of the fact that signed types cannot overflow and then assumes that the addition will not converge.With this optimization, checks like $y + 250 < y$ get simplified to false, thereby bypassing the extra security checks that the developer put in for the whole sake of limiting bugs.
+In the following example, we see an instance of incorrect signed integer
+overflow and its subsequent security implications for cURL's
+\texttt{curl\_parsedate}. In Figure~\ref{fig:libcurl1} we see a function that
+is public to the API for computing the time stamp associated with a given
+string representation of the date. First, the code parses the date string up to
+everything but the time zone difference and stores the result into a \texttt{t}
+of type \texttt{time\_t}. Next, it validates that the time zone is one of many
+available timezones specified in the header file, or if not that it is within
+14 hours ahead or behind of GMT. The developer then is aware of the fact that
+adding the offset to the original time might overflow the time, Unfortunately,
+seemingly unaware of the distinction between signed-type overflows and how they
+are not guaranteed to wrap around in the same way as their unsigned integer
+counterparts, the developer implements these overflow checks incorrectly. The
+compiler, on sufficiently high optimization levels, takes advantage of the fact
+that signed types cannot overflow and then assumes that the addition will not
+converge.With this optimization, checks like $y + 250 < y$ get simplified to
+false, thereby bypassing the extra security checks that the developer put in
+for the whole sake of limiting bugs.
 
-\begin{figure}[h]
+\begin{figure}[t]
 \begin{lstlisting}
-time_t t = ...;
-/* Add the time zone diff between local time zone and GMT. */
+time_t t = /* ... */ ;
+/* Add the time zone diff between local time
+   zone and GMT. */
 long delta = (long)(tzoff!=-1?tzoff:0);
- 
 if((delta > 0) && (t + delta < t))
     return -1; /* time_t overflow */
- 
 t += delta;
 \end{lstlisting}
-\label{fig:libcurl1}
-\caption{The above shows an unstable signed integer check for overflow. Interestingly, Tte developer has gone out of his way to write this check as evidenced  by the comment. Unfortunately this check is invalid and simply a common misconception, and the compiler then simplifies $ t  + $ delta $ < t$ to delta $ < 0$ and thus the compound expression evaluates to false. There is a potential overflow in incrementing \texttt{t} by \texttt{delta}, which is never checked because the compiler has optimized out the unstable code, and this overflow propagates outwards to any library calling this function without any chance of recovery.}
+\caption{\label{fig:libcurl1} The above shows an unstable signed integer check
+for overflow. Interestingly, The developer has gone out of his way to write
+this check as evidenced  by the comment. Unfortunately this check is invalid
+and simply a common misconception, and the compiler then simplifies $ t  + $
+delta $ < t$ to delta $ < 0$ and thus the compound expression evaluates to
+false. There is a potential overflow in incrementing \texttt{t} by
+\texttt{delta}, which is never checked because the compiler has optimized out
+the unstable code, and this overflow propagates outwards to any library calling
+this function without any chance of recovery.}
 \end{figure}
 
 
-In response, we wrote a simple exploit that seeks to take advantage of the bug by overflowing \texttt{t} due to the time zone difference. We assumed for the sake of simplicity that we were working on a 32 bit machine so that our exploit date string was a small date, but if we were on a 64 bit machine the exploit would work the same just the date would have to about 290 billion years later. Our exploit, shown in~\ref{fig:curl-xploit}, passes in to the \texttt{parsedate} function a string that represents the maximum representable timestamp with a signed 32 bit integer: 03:14:07 UTC on Tuesday, 19 January 2038. We then append to this a timezone string such as "-0200." When the code path is executed, $t$ is \texttt{INT\_MAX} and then 20*60*60 is added to it, which overflows. Since the compiler optimized out the overflow check, this undefined value can propagate outwards to any callers of this of this library function and potentially have security implications for them as well.
+In response, we wrote a simple exploit that seeks to take advantage of the bug
+by overflowing \texttt{t} due to the time zone difference. We assumed for the
+sake of simplicity that we were working on a 32 bit machine so that our exploit
+date string was a small date, but if we were on a 64 bit machine the exploit
+would work the same just the date would have to about 290 billion years later.
+Our exploit, shown in Figure~\ref{fig:curl-xploit}, passes in to the
+\texttt{parsedate} function a string that represents the maximum representable
+timestamp with a signed 32 bit integer: 03:14:07 UTC on Tuesday, 19 January
+2038. We then append to this a timezone string such as "-0200." When the code
+path is executed, $t$ is \texttt{INT\_MAX} and then 20*60*60 is added to it,
+which overflows. Since the compiler optimized out the overflow check, this
+undefined value can propagate outwards to any callers of this of this library
+function and potentially have security implications for them as well.
 
-\begin{figure}[h]
+\begin{figure}[t]
 \begin{lstlisting}
 char *exploit = "19 Jan 2038 03:14:07 -0200";
 time_t time = curl_getdate(exploit, NULL);
 \end{lstlisting}
-\label{fig:curl-xploit}
-\caption{The above shows a working exploit for the \texttt{curl\_parsedate} bug. Taking advantage of the undefined behavior of signed integer overflow, the overflow goes undetected due to the unstable overflow check. }
+\caption{\label{fig:curl-xploit} The above shows a working exploit for the
+\texttt{curl\_parsedate} bug. Taking advantage of the undefined behavior of
+signed integer overflow, the overflow goes undetected due to the unstable
+overflow check.}
 \end{figure}
 
-To patch this bug, we check instead for overfow by checking for \texttt{t < INT\_MAX - delta}, which fixes the bug and successfully anticipates the overflow before it happens, because once it happens it is too late.
-
-
-
-\subsection{Programmer Error}
+To patch this bug, we check instead for overflow by checking for \texttt{t <
+INT\_MAX - delta}, which fixes the bug and successfully anticipates the
+overflow before it happens.
 
 \subsection{Buffer Overflow}
 A common cause for buffer overflows are out of order checks when iterating over
-a buffer. In figure~\ref{fig:gnutls-bad-check} and
-figure~\ref{fig:asunder-bad-check} we see examples of this mistake. In each case
+a buffer. In Figure~\ref{fig:gnutls-bad-check} and
+Figure~\ref{fig:asunder-bad-check} we see examples of this mistake. In each case
 an out of bounds location was accessed before a check to make sure that the
 index being accessed was in bounds. The programmers clearly had good
 intentions, however, they mixed up the order of their checks.
 
-\begin{figure}[h]
+\begin{figure}[t]
 \begin{lstlisting}
 while ((line[i] != ':') && (line[i] != '\0')
-    && (i < line_size)) {
+    && (i < line_size)) { /* ... */ }
 \end{lstlisting}
-\label{fig:gnutls-bad-check}
-\caption{In this example, taken from Gnutls, the loop is iterating over the
-indicies of the character buffer line. However, this code has a bug because the
-check to make sure that the index is in bounds comes after access to the
-index.}
+\caption{\label{fig:gnutls-bad-check} In this example, taken from GnuTLS, the
+loop is iterating over the indices of the character buffer line. However, this
+code has a bug because the check to make sure that the index is in bounds comes
+after access to the index.}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[t]
 \begin{lstlisting}
 do {
   pos++;
@@ -230,13 +300,13 @@ do {
 } while ((buf[pos] != '\n') && (size > 0)
     && (pos < 256));
 \end{lstlisting}
-\label{fig:asunder-bad-check}
-\caption{In this check, courtesy of Asunder, the index \texttt{pos} is
-incremented inside of a do while loop, and then a check to make sure the index
-is in bounds (\texttt{pos < 256}) is tacked on to the end of a list of checks
-in the while clause. The length of \texttt{buf} is only 256, so not only will
-there be an out-of-bounds read in the while condition (\texttt{buf[pos]}), but
-there will also be an out-of-bounds write in the call to \texttt{read}.}
+\caption{\label{fig:asunder-bad-check} In this check, courtesy of Asunder, the
+index \texttt{pos} is incremented inside of a do while loop, and then a check
+to make sure the index is in bounds (\texttt{pos < 256}) is tacked on to the
+end of a list of checks in the while clause. The length of \texttt{buf} is only
+256, so not only will there be an out-of-bounds read in the while condition
+(\texttt{buf[pos]}), but there will also be an out-of-bounds write in the call
+to \texttt{read}.}
 \end{figure}
 
 In the Asunder vulnerability it is possible to exploit the code and force it to
@@ -246,9 +316,9 @@ third-party program.
 
 \section{Conclusion}
 \label{sec:conclusion}
-Overall, we have shown the value that STACK brings to the suite of static
+Overall, we have shown the value that Stack brings to the suite of static
 checkers available to developers to verify the correctness and stability of
-their code. STACK can even present warnings to the developer that catch simple
+their code. Stack can even present warnings to the developer that catch simple
 careless error where certain pointers are not dereferenced, as was the case
 with Subversion and Audacity.
 
@@ -263,14 +333,14 @@ In the future, we hope to take this research further. In particular, we'd like
 to analyze more large scale packages such as the llvm, julia, and latex
 packages. Given the time and processor constraints of this project and the
 slight difficulty we had in compiling llvm in the first place for using with
-stack, we would like to be able to devote more time into such an endeavor.
+Stack, we would like to be able to devote more time into such an endeavor.
 Furthermore, while we liked having access to all the Debian packages having
-already been analyzed by STACK, we spent a lot of our time building other
-packages andsuppressing compiler warnings instead of analyzing pstack reports.
+already been analyzed by Stack, we spent a lot of our time building other
+packages and suppressing compiler warnings instead of analyzing optck reports.
 In the past week, we have discussed writing a harness into \texttt{brew
-install} in order to get STACK results on a much larger variety of packages.
+install} in order to get Stack results on a much larger variety of packages.
 Furthermore, we want to focus on existing bugs to attempt to continue on our
-quest for exploitable, public facing bugs..
+quest for exploitable, public facing bugs.
 
 \bibliographystyle{plain}
 \bibliography{report}
