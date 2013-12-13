@@ -1,0 +1,51 @@
+From 1a52c994df8ca00fb22c8d3be9860f3996c83440 Mon Sep 17 00:00:00 2001
+From: Eric Lubin <eblubin@mit.edu>
+Date: Thu, 12 Dec 2013 21:47:21 -0800
+Subject: [PATCH 1/1] Fixed undefined integer overflow checks that were being
+ optimized out by the compiler
+
+The code in question shows that the developer clearly spent some time thinking of all the ways
+the time could overflow. But he disregards the fact that integer overflow is undefined in C
+and therefore he can't rely on checking for ((t1 < t0) ^ (d1 < 0)) which gets simplified to:
+
+((t0 + d0< t0) ^ (d1 < 0))
+
+which goes to:
+
+((d0 < 0) ^ (d1 < 0))
+
+because it assumes no integer overflow.
+
+which finally evaluated to false. This occurs for all the overflow checks, thereby invalidating the checks altogether.
+---
+ lib/parse-datetime.y |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/lib/parse-datetime.y b/lib/parse-datetime.y
+index 4dce7fa..c0e57a2 100644
+--- a/lib/parse-datetime.y
++++ b/lib/parse-datetime.y
+@@ -1560,13 +1560,13 @@ parse_datetime (struct timespec *result, char const *p,
+         long_time_t t4 = t3 + d4;
+         time_t t5 = t4;
+ 
+-        if ((d1 / (60 * 60) ^ pc.rel.hour)
+-            | (d2 / 60 ^ pc.rel.minutes)
+-            | ((t1 < t0) ^ (d1 < 0))
+-            | ((t2 < t1) ^ (d2 < 0))
+-            | ((t3 < t2) ^ (d3 < 0))
+-            | ((t4 < t3) ^ (d4 < 0))
+-            | (t5 != t4))
++        if ((LONG_MAX / (60 * 60) < pc.rel.hour)  /* verify d1 doesn't overflow */
++            | (LONG_MAX / 60 < pc.rel.minutes)    /* verify d2 doesn't overflow */
++            | ((d1 > LONG_MAX - t0) ^ (d1 < 0))  /* verify t1 doesn't overflow */
++            | ((d2 > LONG_MAX - t1) ^ (d2 < 0))  /* verify t2 doesn't overflow */
++            | ((d3 > LONG_MAX - t2) ^ (d3 < 0))  /* verify t3 doesn't overflow */
++            | ((d4 > LONG_MAX - t3) ^ (d4 < 0))  /* verify t4 doesn't overflow */
++            | (t4 > LONG_MAX))  /* verify t4 won't overflow in a time_t */
+           goto fail;
+ 
+         result->tv_sec = t5;
+-- 
+1.7.9.5
+
