@@ -1,0 +1,56 @@
+Message: 5
+Date: Wed, 11 Dec 2013 16:44:13 +0100 (CET)
+From: Daniel Stenberg <daniel@haxx.se>
+To: libcurl development <curl-library@cool.haxx.se>
+Subject: Re: [PATCH]
+Message-ID: <alpine.DEB.2.00.1312111643090.22732@tvnag.unkk.fr>
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+
+On Tue, 10 Dec 2013, Eric Lubin wrote:
+
+Oh, lovely fix. Thanks! Merged and pushed.
+
+-- 
+
+ / daniel.haxx.se
+
+
+_____________________________________________________________________
+
+
+From 9c9cff156dddda8b1208edad400058192e9a0d35 Mon Sep 17 00:00:00 2001
+From: Eric Lubin <eric@lubin.us>
+Date: Tue, 10 Dec 2013 20:01:07 -0800
+Subject: [PATCH] lib/parsedate: Fixed an overflow check optimized out because
+ of undefined behavior
+
+In C, signed integer overflow is undefined behavior. Thus, the
+compiler is allowed to assume that it will not occur. In the check for
+an overflow, the developer assumes that the signed integer of type
+time_t will wrap around if it overflows. However, this behavior is
+undefined in the C standard. Thus, when the compiler sees this,
+it simplifies t + delta < t to delta < 0. Since delta > 0 and
+delta < 0 can't both be true, the entire if statement is optimized
+out under certain optimization levels. Thus, the parsedate function
+would return PARSEDATE_OK with an undefined value in the time,
+instead of return -1 = PARSEDATE_FAIL.
+---
+ lib/parsedate.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/parsedate.c b/lib/parsedate.c
+index 1ddd008..b32be8f 100644
+--- a/lib/parsedate.c
++++ b/lib/parsedate.c
+@@ -526,7 +526,7 @@ static int parsedate(const char *date, time_t *output)
+     /* Add the time zone diff between local time zone and GMT. */
+     long delta = (long)(tzoff!=-1?tzoff:0);
+ 
+-    if((delta>0) && (t + delta < t))
++    if((delta>0) && t > LONG_MAX  - delta)
+       return -1; /* time_t overflow */
+ 
+     t += delta;
+-- 
+1.7.9.5
+

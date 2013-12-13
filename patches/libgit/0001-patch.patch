@@ -1,0 +1,15 @@
+https://github.com/jaredlwong/libgit2/commit/307a3d6762a2797ee28b43fceb1c941680ac97ec#diff-0
+
+Fixed left shift size of int.
+Simply switched the ordering of the checks in the for loop where this left
+shift was being made.
+
+@@ -144,7 +144,7 @@ struct git_delta_index *
+      entries = 0xfffffffeU / RABIN_WINDOW;
+    }
+    hsize = entries / 4;
+ -  for (i = 4; (1u << i) < hsize && i < 31; i++);
+ +  for (i = 4; i < 31 && (1u << i) < hsize; i++);
+    hsize = 1 << i;
+    hmask = hsize - 1;
+  

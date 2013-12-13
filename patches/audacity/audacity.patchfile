@@ -1,0 +1,13 @@
+Index: src/Project.cpp
+===================================================================
+--- src/Project.cpp	(revision 12976)
++++ src/Project.cpp	(working copy)
+@@ -594,7 +594,7 @@
+       //    this file in different locations.
+       gPrefs->Read(wxT("/Window/Maximized"), pMaximized);
+       gPrefs->Read(wxT("/Window/Iconized"), pIconized);
+-      if (pMaximized || pIconized) {
++      if (*pMaximized || *pIconized) {
+          nextRect->SetX(gPrefs->Read(wxT("/Window/Normal_X"), defaultWindowRect.GetX()));
+          nextRect->SetY(gPrefs->Read(wxT("/Window/Normal_Y"), defaultWindowRect.GetY()));
+          nextRect->SetWidth(gPrefs->Read(wxT("/Window/Normal_Width"), defaultWindowRect.GetWidth()));

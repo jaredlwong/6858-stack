@@ -1,0 +1,1 @@
+https://github.com/bagder/curl/commit/7246dffff5c7d046c7558ca6bf35781a2fe58ee9

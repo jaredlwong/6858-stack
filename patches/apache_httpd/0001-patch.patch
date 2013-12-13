@@ -1,0 +1,24 @@
+In server/util_expr_parse.c there is a bug in the handling of yytoken when yytoken is equal to YYEMPTY. YYEMPTY is set to -2. The only place this function, yysyntax_error, is used is in yyparse's section for yyerrlab. In yyerrlab, yytoken is set as:
+
+    yytoken = yychar == YYEMPTY ? YYEMPTY : YYTRANSLATE (yychar);
+
+Clearly, when yysyntax_error is called yytoken may be YYEMPTY. When yytnamerr is called with the value of yytname[yytoken], it is undefined what will happen.
+
+I have included the patch I think needs to be made below. I'm not completely sure, however, of this fix. Regardless, this is a bug.
+
+----- patch -----
+
+Index: server/util_expr_parse.c
+===================================================================
+--- server/util_expr_parse.c	(revision 1548995)
++++ server/util_expr_parse.c	(working copy)
+@@ -1054,7 +1054,8 @@
+ yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
+                 yytype_int16 *yyssp, int yytoken)
+ {
+-  YYSIZE_T yysize0 = yytnamerr (YY_NULL, yytname[yytoken]);
++  YYSIZE_T yysize0 = yytoken == YYEMPTY
++    ? 0 : yytnamerr (YY_NULL, yytname[yytoken]);
+   YYSIZE_T yysize = yysize0;
+   enum { YYERROR_VERBOSE_ARGS_MAXIMUM = 5 };
+   /* Internationalized format string. */

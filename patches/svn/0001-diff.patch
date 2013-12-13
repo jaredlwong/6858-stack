@@ -1,0 +1,11 @@
+--- subversion/trunk/subversion/libsvn_subr/path.c	2013/12/06 09:56:44	1548479
++++ subversion/trunk/subversion/libsvn_subr/path.c	2013/12/06 10:01:17	1548480
+@@ -1252,7 +1252,7 @@
+      anything after it?  We look for the "rightmost" period in the
+      string. */
+   last_dot = strrchr(path, '.');
+-  if (last_dot && (last_dot + 1 != '\0'))
++  if (last_dot && (*(last_dot + 1) != '\0'))
+     {
+       /* If we have a period, we need to make sure it occurs in the
+          final path component -- that there's no path separator

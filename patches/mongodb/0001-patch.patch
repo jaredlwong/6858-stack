@@ -1,0 +1,17 @@
+SERVER-12006 - Fixed potential pointer overflow leading to an infinit…
+…e loop in
+
+db/storage/record.cpp
+
+In order to iterate over the data in the record there was a previous loop that
+compared pointers. This will not work as expected because the addr pointer may
+overflow.
+
+In C, it is undefined behavior to increment a pointer (in this case addr) more
+than 1 past the end of the array (in this case _data) to which it points.
+
+If the compiler so chooses, it may wrap around the pointer if it increases past
+a_data + SliceSize + 1. This would cause this loop to never exit because addr
+would always be less than end.
+
+

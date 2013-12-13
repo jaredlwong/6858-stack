@@ -1,0 +1,76 @@
+
+
+
+Eric Lubin <eric@lubin.us> writes:
+
+[[[
+* subversion/libsvn_subr/io.c
+ (contents_three_identical_p): Fixed incorrect pointer check against NULL, when the purpose was actually to check the value stored at that pointer for true or false
+]]]
+
+Committed, thanks!  I guess you found these via a compiler warning or
+some static checking tool?
+
+-- 
+Philip Martin | Subversion Committer
+WANdisco // *Non-Stop Data*
+
+
+
+
+
+Hi,
+
+On closer analysis: The broken code still delivers the correct result, however, it always scans the whole files even if the first byte is different.
+
+Good catch. I feel fortified in my love to static analysis...
+
+Best regards
+
+Markus Schaber
+
+CODESYS® a trademark of 3S-Smart Software Solutions GmbH
+
+Inspiring Automation Solutions
+
+3S-Smart Software Solutions GmbH
+Dipl.-Inf. Markus Schaber | Product Development Core Technology
+Memminger Str. 151 | 87439 Kempten | Germany
+Tel. +49-831-54031-979 | Fax +49-831-54031-50
+
+E-Mail: m.schaber@codesys.com | Web: http://www.codesys.com | CODESYS store: http://store.codesys.com
+CODESYS forum: http://forum.codesys.com
+
+Managing Directors: Dipl.Inf. Dieter Hess, Dipl.Inf. Manfred Werner | Trade register: Kempten HRB 6186 | Tax ID No.: DE 167014915
+
+-----Ursprüngliche Nachricht-----
+Von: Markus Schaber [mailto:m.schaber@codesys.com]
+Gesendet: Freitag, 6. Dezember 2013 16:21
+An: Eric Lubin; dev@subversion.apache.org
+Betreff: AW: [PATCH] fix for programmer error in file equality check due to
+pointer logic
+
+Hi,
+
+I'm the author of said code, and feel ashamed that this bug slipped in.
+
+The patch looks okay, and somehow I wonder that the code ever worked and
+passed the tests. :-(
+
+Best regards
+
+Markus Schaber
+
+CODESYS® a trademark of 3S-Smart Software Solutions GmbH
+
+Inspiring Automation Solutions
+
+3S-Smart Software Solutions GmbH
+Dipl.-Inf. Markus Schaber | Product Development Core Technology Memminger Str.
+151 | 87439 Kempten | Germany Tel. +49-831-54031-979 | Fax +49-831-54031-50
+
+E-Mail: m.schaber@codesys.com | Web: http://www.codesys.com | CODESYS store:
+http://store.codesys.com CODESYS forum: http://forum.codesys.com
+
+Managing Directors: Dipl.Inf. Dieter Hess, Dipl.Inf. Manfred Werner | Trade
+register: Kempten HRB 6186 | Tax ID No.: DE 167014915
