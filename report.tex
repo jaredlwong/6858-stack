@@ -63,9 +63,9 @@
 }
 
 
-\newcommand{\NumPackages}{65 }
-\newcommand{\NumPatches}{20 }
-\newcommand{\NumPatchesAccepted}{5 }
+\newcommand{\NumPackages}{85 }
+\newcommand{\NumPatches}{18 }
+\newcommand{\NumPatchesAccepted}{6 }
 
 
 \title{Uncovering Undefined Behavior}
@@ -92,18 +92,24 @@ or less likely to be vulnerabilities.
 In section~\ref{sec:threat} we review the threat model, in section~\ref{sec:classification}
 we break down the observed bugs into a number of different categories that loosely 
 correspond to the the types of bugs STACK can detect, and in section~\ref{sec:conclusion}
-we wrap up and discuss future areas of research. Finally, section\ref{sec:appendix} provides an 
+we wrap up and discuss future areas of research. Finally, section~\ref{sec:appendix} provides an 
 appendix of all patches found and submitted thus far.
 
 \section{Threat Model}
 \label{sec:threat}
-We assume that an attacker has complete knowledge of the source code. Any 
-optimization unsafe 
+We assume that an attacker has complete knowledge of the source code in question. Any 
+optimization unsafe bugs that exist they are able to find and exploit if there is any entry point.
 
-\section{Classification of Undefined Behavior Bugs}
+\section{Classification of Unstable Code}
 \label{sec:classification}
-Generally, the bugs we found due to undefined behavior fell into several
-general categories.
+Generally, the bugs we found due to unstable code fell into several
+main categories. First, null pointer dereferences were the  most common type of 
+bug signaled by STACK but did not alter correctness. Mixed in with these null pointer dereferences
+were actual programmer errors due to accidentally not dereferencing pointers for which
+they wanted their value. Second, signed integer operation overflow checks were another common source
+of developer misconception. Thirdly, there were pointer overflow bugs. And finally, there were a class
+of miscellaneous bugs related to division by zero, buffer overflow by one, and shift left and right overflow.
+
 
 \subsection{Null Pointer Dereference}
 Null pointer dereference, caused by checks to ensure that pointer is not null,
@@ -113,7 +119,9 @@ but pointer is never not null at location. True result optimized out.
 
 \subsection{Programmer Error}
 
+\subsection{Argument Checking}
 
+Order of positions matter, can cause overflow if in wrong order. Accessing out of bounds memory, shifting right and left
 
 
 \section{Exploits}
