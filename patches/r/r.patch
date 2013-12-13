@@ -1,0 +1,24 @@
+In GESymbol there is a call to ucstoutf8, which returns (size_t) -1, (size_t) -2, or a proper return value. GESymbol does not handle the error conditions correctly because of unsigned/signed integer handling.
+
+Below is the patch I think should be made:
+Index: src/main/engine.c
+===================================================================
+--- src/main/engine.c   (revision 64454)
++++ src/main/engine.c   (working copy)
+@@ -2004,12 +2004,13 @@
+      */
+     if(pch == NA_INTEGER) /* do nothing */;
+     else if(pch < 0) {
+-       int res;
++       size_t res;
+        char str[16];
+        if(gc->fontface == 5)
+            error("use of negative pch with symbol font is invalid");
+-       res = (int) ucstoutf8(str, -pch);
+-       if(res == -1) error("invalid multibyte string '%s'", str);
++       res = ucstoutf8(str, -pch);
++       if(res == (size_t) -1 || res == (size_t) -2)
++            error("invalid multibyte string '%s'", str);
+        str[res] = '\0';
+        GEText(x, y, str, CE_UTF8, NA_REAL, NA_REAL, 0., gc, dd);
+     } else if(' ' <= pch && pch <= maxchar) {
