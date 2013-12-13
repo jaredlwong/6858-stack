@@ -3,23 +3,22 @@
 % Set margins
 \usepackage[margin=0.5in]{geometry}
 
-% Set font
+% Set fonts, both for main and for source code
 \usepackage{fontspec}
 \setmainfont{"[times_new_roman.ttf]"}
 \setmonofont{"[inconsolata.ttf]"}
 
-% allow for source code
+% formatting for source code
 \usepackage{listings}
-
 \usepackage{color}
 \definecolor{mygreen}{rgb}{0,0.6,0}
 \definecolor{mygray}{rgb}{0.5,0.5,0.5}
 \definecolor{mymauve}{rgb}{0.58,0,0.82}
 
-\lstset{ %
+\lstset{
   backgroundcolor=\color{white},   % choose the background color; you must add
                                    % \usepackage{color} or \usepackage{xcolor}
-  basicstyle=\ttfamily,        % the size of the fonts that are used for
+  basicstyle=\ttfamily,            % the size of the fonts that are used for
                                    % the code
   breakatwhitespace=false,         % sets if automatic breaks should only
                                    % happen at whitespace
@@ -72,11 +71,26 @@
 \begin{document}
 \maketitle
 
-This is our report.
+\section{Overview}
+In this project we study the effects of undefined behavior in open source
+software. In particular, we focus on code with undefined behavior which may
+lead to incorrect outputs, or which could compromise a system.
+
+In order to study undefined behavior we use Stack\cite{stack} which finds undefined
+behavior by finding code that may be optimized out by compilers.
+
+We define several categories of behavioral patterns associated with undefined
+behavior: redundant checks, 
+
+\section{Threat Model}
+We assume that an attacker has complete knowledge of the source code.
 
 \begin{lstlisting}
 n = e - i + 1;  /* number of elements */
-if (n <= 0 || !lua_checkstack(L, n))  /* n <= 0 means arith. overflow */
+if (n <= 0 || !lua_checkstack(L, n))
 \end{lstlisting}
+
+\bibliographystyle{plain}
+\bibliography{report}
 
 \end{document}
