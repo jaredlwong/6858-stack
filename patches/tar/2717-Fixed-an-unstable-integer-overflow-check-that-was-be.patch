@@ -3,7 +3,26 @@ From: Eric Lubin <eblubin@mit.edu>
 Date: Thu, 12 Dec 2013 21:20:49 -0800
 Subject: [PATCH 2717/2717] Fixed an unstable integer overflow check that was
  being optimized out by the compiler
+In delete.c, the check to see if the seek will overflow the off_t is incorrect. 
+Since off_t is a signed integer, we must respect the C standard that says signed integer overflow is undefined.
+Consequently, the compiler is free to simplify such operations that might cause overflow. 
+For example, it might perform the following optimization, thereby invalidating the overflow check. 
 
+Given the following:
+
+(position < position0) != (increment < 0) 
+
+the compiler reads it as:
+(position0 + increment < position0) != (increment < 0) 
+
+Since the addition is with signed integers, it assumes they cannot overflow and thus simplifies this further to:
+
+(increment < 0) != (increment < 0) 
+
+Which is then simplified to false.
+
+This undefined behavior optimization could potentially have security implications with any inputs that
+would cause this overflow to occur, because the check is not being executed.
 ---
  src/delete.c |    4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)
