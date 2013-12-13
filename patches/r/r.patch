@@ -1,3 +1,5 @@
+https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15609
+
 In GESymbol there is a call to ucstoutf8, which returns (size_t) -1, (size_t) -2, or a proper return value. GESymbol does not handle the error conditions correctly because of unsigned/signed integer handling.
 
 Below is the patch I think should be made:
