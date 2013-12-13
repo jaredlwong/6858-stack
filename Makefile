@@ -7,4 +7,4 @@ all:
 	@xelatex report.tex
 
 clean:
-	rm -f *.ps *.dvi *.pdf *.aux *.log *.bbl *.blg
+	rm -f *.ps *.dvi *.pdf *.aux *.log *.bbl *.blg *.out
