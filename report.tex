@@ -8,6 +8,9 @@
 \setmainfont{"[times_new_roman.ttf]"}
 \setmonofont{"[inconsolata.ttf]"}
 
+% For bibtex urls
+\usepackage{url}
+
 % formatting for source code
 \usepackage{listings}
 \usepackage{color}
@@ -96,16 +99,34 @@ This paper presents a case study into the common mis-practices of many developer
 has helped us develop a rule-of-humb heuristic as to which types of bugs are more
 or less likely to be vulnerabilities.
 
-In section~\ref{sec:threat} we review the threat model, in section~\ref{sec:classification}
-we break down the observed bugs into a number of different categories that loosely 
-correspond to the the types of bugs STACK can detect, and in section~\ref{sec:conclusion}
-we wrap up and discuss future areas of research. Finally, section~\ref{sec:appendix} provides an 
-appendix of all patches found and submitted thus far.
+In section~\ref{sec:security} we review our working threat model and the
+security implications of undefined behavior, in
+section~\ref{sec:classification} we break down the observed bugs into a number
+of different categories that loosely correspond to the the types of bugs STACK
+can detect, and in section~\ref{sec:conclusion} we wrap up and discuss future
+areas of research. Finally, section~\ref{sec:appendix} provides an appendix of
+all patches found and submitted thus far.
 
-\section{Threat Model}
-\label{sec:threat}
-We assume that an attacker has complete knowledge of the source code in question. Any 
-optimization unsafe bugs that exist they are able to find and exploit if there is any entry point.
+\section{Security Overview}
+\label{sec:security}
+\subsection{Threat Model}
+When accessing the security implications of undefined behavior we assume that
+an attacker has complete knowledge of the source code. Any optimization unsafe
+bugs that exist are known to the attacker, and are able to exploited if
+possible.
+
+\subsection{Threats}
+Undefined behavior can lead to a great number of common security
+vulnerabilities. In our case study of undefined behavior we observe pointer
+overflows, buffer overflows, integer overflows, uninitialized data, null
+pointer dereferences, and infinite loops. In a recent case study from 2010 to
+mid 2011 \cite{chen-kbugs} of the Linux kernel, these types of errors have been
+shown to account for up to 70\% of the CVE reports.
+
+As compilers increasingly take advantage of undefined behavior \cite{stack} and
+attackers continue to exploit behavior caused by undefined behavior it is
+important for programmers to not use, intentionally or unintentionlly,
+undefined behavior.
 
 \section{Classification of Unstable Code}
 \label{sec:classification}
@@ -169,25 +190,31 @@ Order of positions matter, can cause overflow if in wrong order. Accessing out o
 
 \section{Conclusion}
 \label{sec:conclusion}
-Overall, we have shown the value that STACK brings to the suite of static checkers available to 
-developers to verify the correctness and stability of their code. STACK can even present warnings
-to the developer that catch simple careless error where certain pointers are not dereferenced, as
-was the case with Subversion and Audacity. 
+Overall, we have shown the value that STACK brings to the suite of static
+checkers available to developers to verify the correctness and stability of
+their code. STACK can even present warnings to the developer that catch simple
+careless error where certain pointers are not dereferenced, as was the case
+with Subversion and Audacity.
 
-Nonetheless, we have noticed the difficulty with discovering legitimate exploits based on these
-undefined behavior bugs. Amidst countless redundant null pointer dereferences, many such bugs
-are hidden numerous levels deep from the outwards facing components in these packages. As a result,
-the ability to propagate an invalid input into such a bug and then exploit this bug is highly challenging. 
+Nonetheless, we have noticed the difficulty with discovering legitimate
+exploits based on these undefined behavior bugs. Amidst countless redundant
+null pointer dereferences, many such bugs are hidden numerous levels deep from
+the outwards facing components in these packages. As a result, the ability to
+propagate an invalid input into such a bug and then exploit this bug is highly
+challenging.
 
-In the future, we hope to take this research further. In particular, we'd like to analyze more large
-scale packages such as the llvm, julia, and latex packages. Given the time and processor constraints
-of this project and the slight difficulty we had in compiling llvm in the first place for using
-with stack, we would like to be able to devote more time into such an endeavor. Furthermore, while we liked
-having access to all the Debian packages having already been analyzed by STACK, we spent a lot of our time
-building other packages andsuppressing compiler warnings instead of analyzing pstack reports. 
-In the past week, we have discussed writing a harness into \texttt{brew install} in order to get STACK
-results on a much larger variety of packages. Furthermore, we want to focus on existing bugs to attempt
-to continue on our quest for exploitable, public facing bugs..
+In the future, we hope to take this research further. In particular, we'd like
+to analyze more large scale packages such as the llvm, julia, and latex
+packages. Given the time and processor constraints of this project and the
+slight difficulty we had in compiling llvm in the first place for using with
+stack, we would like to be able to devote more time into such an endeavor.
+Furthermore, while we liked having access to all the Debian packages having
+already been analyzed by STACK, we spent a lot of our time building other
+packages andsuppressing compiler warnings instead of analyzing pstack reports.
+In the past week, we have discussed writing a harness into \texttt{brew
+install} in order to get STACK results on a much larger variety of packages.
+Furthermore, we want to focus on existing bugs to attempt to continue on our
+quest for exploitable, public facing bugs..
 
 \bibliographystyle{plain}
 \bibliography{report}
