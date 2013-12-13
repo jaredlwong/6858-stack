@@ -1,10 +1,10 @@
 import string
 import os
-POSSIBLE_BUGS = ('shift left overflow',)
-#POSSIBLE_BUGS = ('buffer overflow', 'signed multiplication overflow', 'division by zero', 'signed subtraction overflow', 'signed addition overflow', 'null pointer dereference', 'pointer overflow', 'shift left overflow', 'shift right overflow', 'bugon-free', 'bugon-bounds', 'bugon-null')
+#POSSIBLE_BUGS = ('shift left overflow',)
+POSSIBLE_BUGS = ('buffer overflow', 'signed multiplication overflow', 'division by zero', 'signed subtraction overflow', 'signed addition overflow', 'null pointer dereference', 'pointer overflow', 'shift left overflow', 'shift right overflow', 'bugon-free', 'bugon-bounds', 'bugon-null')
 BUG_SEPARATOR = '---'
 EXTENSION = '-poptck.txt'
-DIR_NAME = 'poptcks/'
+DIR_NAME = './poptcks/'
 
 class StackReport(object):
 
@@ -25,9 +25,13 @@ class StackReport(object):
 if __name__ == '__main__':
 
     reports = []
+    total = 0
+    hit = 0
     for f in os.listdir(DIR_NAME):
+       total += 1
        f_name = os.path.join(DIR_NAME, f)
        if os.path.getsize(f_name) > 0:
+          hit += 1
           fd = open(f_name)
           reports.append(StackReport(f[:-len(EXTENSION)], fd.read()))
           fd.close()
@@ -43,7 +47,7 @@ if __name__ == '__main__':
             freqs[k] += r.freqs[k]
 
     print 'Total %d, Distribution: %s' % (s, str(freqs))
-
+    print '%f' % (float(hit)/float(total))
     for r in reports:
         if len(r.freqs):
             print r

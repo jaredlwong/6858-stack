@@ -14,7 +14,6 @@
 \definecolor{mygreen}{rgb}{0,0.6,0}
 \definecolor{mygray}{rgb}{0.5,0.5,0.5}
 \definecolor{mymauve}{rgb}{0.58,0,0.82}
-
 \lstset{
   backgroundcolor=\color{white},   % choose the background color; you must add
                                    % \usepackage{color} or \usepackage{xcolor}
@@ -64,33 +63,58 @@
 }
 
 
+\newcommand{\NumPackages}{65 }
+\newcommand{\NumPatches}{20 }
+\newcommand{\NumPatchesAccepted}{5 }
 
-\title{Exploiting Undefined Behavior}
+
+\title{Uncovering Undefined Behavior}
 \author{Eric Lubin, Jared Wong}
 
 \begin{document}
 \maketitle
 
 \section{Overview}
-In this project we study the effects of undefined behavior in open source
-software. In particular, we focus on code with undefined behavior which may
-lead to incorrect outputs, or which could compromise a system.
+In this project we study the effects of undefined behavior in open source software
+and its ability to cause unstable code to be optimized out by modern compilers.
 
-In order to study undefined behavior we use Stack\cite{stack} which finds undefined
-behavior by finding code that may be optimized out by compilers.
+Given the sheer number of software systems that contain such errors, 
+with about 50\% of Debian packages reporting over 80,000 different warnings,
+we attempted to begin the process of filtering through these results. 
 
-We define several categories of behavioral patterns associated with undefined
-behavior: redundant checks, 
+With the help of STACK\cite{stack}, we analyzed \NumPackages packages, 
+from Debian and other locations, and submitted a total of \NumPatches patches, 
+of which \NumPatchesAccepted have been accepted thus far, with the rest pending approval.
+This paper presents a case study into the common mis-practices of many developers and
+has helped us develop a rule-of-humb heuristic as to which types of bugs are more
+or less likely to be vulnerabilities.
+
+In section~\ref{sec:threat} we review the threat model, in section~\ref{sec:classification}
+we break down the observed bugs into a number of different categories that loosely 
+correspond to the the types of bugs STACK can detect, and in section~\ref{sec:conclusion}
+we wrap up and discuss future areas of research. Finally, section\ref{sec:appendix} provides an 
+appendix of all patches found and submitted thus far.
 
 \section{Threat Model}
-We assume that an attacker has complete knowledge of the source code.
+\label{sec:threat}
+We assume that an attacker has complete knowledge of the source code. Any 
+optimization unsafe 
 
 \section{Classification of Undefined Behavior Bugs}
+\label{sec:classification}
 Generally, the bugs we found due to undefined behavior fell into several
 general categories.
 
+\subsection{Null Pointer Dereference}
 Null pointer dereference, caused by checks to ensure that pointer is not null,
 but pointer is never not null at location. True result optimized out.
+
+\subsection{Signed Integer Operation Overflow}
+
+\subsection{Programmer Error}
+
+
+
 
 \section{Exploits}
 Some random exploits
@@ -103,7 +127,30 @@ n = e - i + 1;  /* number of elements */
 if (n <= 0 || !lua_checkstack(L, n))
 \end{lstlisting}
 
+\section{Conclusion}
+\label{sec:conclusion}
+Overall, we have shown the value that STACK brings to the suite of static checkers available to 
+developers to verify the correctness and stability of their code. STACK can even present warnings
+to the developer that catch simple careless error where certain pointers are not dereferenced, as
+was the case with Subversion and Audacity. 
+
+Nonetheless, we have noticed the difficulty with discovering legitimate exploits based on these
+undefined behavior bugs. Amidst countless redundant null pointer dereferences, many such bugs
+are hidden numerous levels deep from the outwards facing components in these packages. As a result,
+the ability to propagate an invalid input into such a bug and then exploit this bug is highly challenging. 
+
+In the future, we hope to take this research further. In particular, we'd like to analyze more large
+scale packages such as the llvm, julia, and latex packages. Given the time and processor constraints
+of this project and the slight difficulty we had in compiling llvm in the first place for using
+with stack, we would like to be able to devote more time into such an endeavor. Furthermore, while we liked
+having access to all the Debian packages having already been analyzed by STACK, we spent a lot of our time
+building other packages andsuppressing compiler warnings instead of analyzing pstack reports. 
+In the past week, we have discussed writing a harness into \texttt{brew install} in order to get STACK
+results on a much larger variety of packages. Furthermore, we want to focus on existing bugs to attempt
+to continue on our quest for exploitable, public facing bugs..
+
 \bibliographystyle{plain}
 \bibliography{report}
-
+\section{Appendix}
+\label{sec:appendix}
 \end{document}
