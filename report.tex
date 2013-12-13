@@ -12,6 +12,8 @@
 \usepackage{url}
 \setlength{\abovecaptionskip}{1pt plus 0pt minus 1pt}
 
+\setlength{\abovecaptionskip}{0cm}
+
 % formatting for source code
 \usepackage{listings}
 \usepackage{color}
@@ -19,10 +21,13 @@
 \definecolor{mygray}{rgb}{0.5,0.5,0.5}
 \definecolor{mymauve}{rgb}{0.58,0,0.82}
 \lstset{
+  abovecaptionskip=0em,
   backgroundcolor=\color{white},   % choose the background color; you must add
                                    % \usepackage{color} or \usepackage{xcolor}
   basicstyle=\ttfamily,            % the size of the fonts that are used for
                                    % the code
+  belowskip=0em,
+  belowcaptionskip=0em,
   breakatwhitespace=false,         % sets if automatic breaks should only
                                    % happen at whitespace
   breaklines=true,                 % sets automatic line breaking
@@ -197,10 +202,47 @@ To patch this bug, we check instead for overfow by checking for \texttt{t < INT\
 \subsection{Programmer Error}
 
 \subsection{Buffer Overflow}
+A common cause for buffer overflows are out of order checks when iterating over
+a buffer. In figure~\ref{fig:gnutls-bad-check} and
+figure~\ref{fig:asunder-bad-check} we see examples of this mistake. In each case
+an out of bounds location was accessed before a check to make sure that the
+index being accessed was in bounds. The programmers clearly had good
+intentions, however, they mixed up the order of their checks.
 
-Order of positions matter, can cause overflow if in wrong order. Accessing out of bounds memory, shifting right and left
+\begin{figure}[h]
+\begin{lstlisting}
+while ((line[i] != ':') && (line[i] != '\0')
+    && (i < line_size)) {
+\end{lstlisting}
+\label{fig:gnutls-bad-check}
+\caption{In this example, taken from Gnutls, the loop is iterating over the
+indicies of the character buffer line. However, this code has a bug because the
+check to make sure that the index is in bounds comes after access to the
+index.}
+\end{figure}
 
+\begin{figure}[h]
+\begin{lstlisting}
+do {
+  pos++;
+  size = read(fd, &buf[pos], 1);
+  /* ... */
+} while ((buf[pos] != '\n') && (size > 0)
+    && (pos < 256));
+\end{lstlisting}
+\label{fig:asunder-bad-check}
+\caption{In this check, courtesy of Asunder, the index \texttt{pos} is
+incremented inside of a do while loop, and then a check to make sure the index
+is in bounds (\texttt{pos < 256}) is tacked on to the end of a list of checks
+in the while clause. The length of \texttt{buf} is only 256, so not only will
+there be an out-of-bounds read in the while condition (\texttt{buf[pos]}), but
+there will also be an out-of-bounds write in the call to \texttt{read}.}
+\end{figure}
 
+In the Asunder vulnerability it is possible to exploit the code and force it to
+corrupt it's memory by ensuring that the file descriptor being read from
+doesn't stall. Here the file descriptor is simply the output of another
+third-party program.
 
 \section{Conclusion}
 \label{sec:conclusion}
