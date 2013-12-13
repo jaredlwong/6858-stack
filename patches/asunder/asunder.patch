@@ -1,0 +1,38 @@
+In asunder there is a wrapper call to cdparanoia. The fd in this example is the
+stderr of the call to cdparanoia. On the stderr a progress bar is shown. If the
+progress bar happens to update fast enough and with enough characters without a
+newline, the buf (with a length of 256)overflows because the check that the pos
+was less than 256 was after the write to buf at 256. Again, furhter on buf at
+index 256 is set to the nul character. This could potentially lead to a
+segfault and crash the application.
+
+A malicious attacker could create a cd-rom with such a track such that
+cdparanoia reads it in exactly this fashion and causes asunder to do unknown
+things.
+
+
+Index: src/wrappers.c
+===================================================================
+--- src/wrappers.c	(revision 300)
++++ src/wrappers.c	(working copy)
+@@ -339,10 +339,9 @@
+     // note: only use the "[wrote]" numbers
+     do
+     {
+-        pos = -1;
++        pos = 0;
+         do
+         {
+-            pos++;
+             size = read(fd, &buf[pos], 1);
+             
+             if (size == -1 && errno == EINTR)
+@@ -352,7 +351,7 @@
+                 size = 1;
+             }
+             
+-        } while ((buf[pos] != '\n') && (size > 0) && (pos < 256));
++        } while ((buf[pos] != '\n') && (size > 0) && ((++pos) < 255));
+         buf[pos] = '\0';
+ 
+         if ((buf[0] == 'R') && (buf[1] == 'i'))
