@@ -114,8 +114,7 @@ security implications of undefined behavior, in
 section~\ref{sec:classification} we break down the observed bugs into a number
 of different categories that loosely correspond to the types of bugs Stack
 can detect, and in section~\ref{sec:conclusion} we wrap up and discuss future
-areas of research. Finally, section~\ref{sec:appendix} provides an appendix of
-all patches found and submitted thus far.
+areas of research.
 
 \section{Security Overview}
 \label{sec:security}
@@ -185,7 +184,9 @@ char *last_dot = strrchr(path, '.');
 /* check if the strings ends in a period */
 if (last_dot && (last_dot + 1 != '\0')) {...}
 \end{lstlisting}
-\caption{\label{fig:svn} lalalalal}
+\caption{\label{fig:svn} The above code snippet gives an example of a programmer error
+in SVN. Having forgotten to dereference (last\_dot + 1), the compiler optimizes out the check
+against null. STACK warns the user of this programming error.}
 \end{figure}
 
 \subsection{Signed Integer Operation Overflow}
@@ -344,6 +345,4 @@ quest for exploitable, public facing bugs.
 
 \bibliographystyle{plain}
 \bibliography{report}
-\section{Appendix}
-\label{sec:appendix}
 \end{document}
