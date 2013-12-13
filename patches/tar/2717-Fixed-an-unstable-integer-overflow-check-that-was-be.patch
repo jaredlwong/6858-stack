@@ -1,0 +1,35 @@
+From 29dbfc1b5c79b536402c5dacdee8eb69a433f373 Mon Sep 17 00:00:00 2001
+From: Eric Lubin <eblubin@mit.edu>
+Date: Thu, 12 Dec 2013 21:20:49 -0800
+Subject: [PATCH 2717/2717] Fixed an unstable integer overflow check that was
+ being optimized out by the compiler
+
+---
+ src/delete.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/delete.c b/src/delete.c
+index d17dd25..bd5c8d5 100644
+--- a/src/delete.c
++++ b/src/delete.c
+@@ -20,7 +20,7 @@
+ 
+ #include <system.h>
+ #include <system-ioctl.h>
+-
++#include <limits.h>
+ #include "common.h"
+ #include <rmt.h>
+ 
+@@ -79,7 +79,7 @@ move_archive (off_t count)
+     off_t position = position0 + increment;
+ 
+     if (increment / count != record_size
+-	|| (position < position0) != (increment < 0)
++	|| (increment > LONG_MAX - position0) != (increment < 0)
+ 	|| (position = position < 0 ? 0 : position,
+ 	    rmtlseek (archive, position, SEEK_SET) != position))
+       seek_error_details (archive_name_array[0], position);
+-- 
+1.7.9.5
+
